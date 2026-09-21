@@ -15,7 +15,7 @@ public class TSocketSend extends TSocket_base {
     TCPSegment segment = new TCPSegment();
     segment.setData(data, offset, length);
     segment.setPsh(true);
-    SimNet.send(segment);
+    network.send(segment);
     
   }
 }
