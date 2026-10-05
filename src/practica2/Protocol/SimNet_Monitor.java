@@ -10,7 +10,9 @@ import util.SimNet;
 public class SimNet_Monitor implements SimNet {
 
   protected CircularQueue<TCPSegment> queue;
-  //Completar
+  protected ReentrantLock l = new ReentrantLock();
+  protected Condition c = l.newCondition();
+  
 
   public SimNet_Monitor() {
     queue  = new CircularQueue<>(Const.SIMNET_QUEUE_SIZE);
