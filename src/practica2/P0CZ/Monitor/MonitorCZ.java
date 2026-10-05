@@ -5,16 +5,23 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MonitorCZ {
 
     private int x = 0;
-    //Completar...
-
+    private final int I = 10000;
+    private ReentrantLock l = new ReentrantLock();
+    
     public void inc() {
-        //Incrementa en una unitat el valor d'x
-        throw new RuntimeException("//Completar...");
+       try{
+        l.lock();
+        x = x + 1;
+       } finally{
+        l.unlock();
+       }
     }
 
     public int getX() {
-        //Ha de retornar el valor d'x
-        throw new RuntimeException("//Completar...");
+        l.lock();
+        int temp = x;
+        l.unlock();
+        return temp;
     }
 
 }
