@@ -11,7 +11,8 @@ public class SimNet_Monitor implements SimNet {
 
   protected CircularQueue<TCPSegment> queue;
   protected ReentrantLock l = new ReentrantLock();
-  protected Condition c = l.newCondition();
+  protected Condition notFull = l.newCondition();
+  protected Condition notEmpty = l.newCondition();
   
 
   public SimNet_Monitor() {
@@ -21,17 +22,39 @@ public class SimNet_Monitor implements SimNet {
 
   @Override
   public void send(TCPSegment seg) {
-    throw new RuntimeException("//Completar...");
+    l.lock();
+    try {
+      while (queue.full()) {
+        notFull.await();
+      }
+      queue.put(seg);
+      notEmpty.signal();
+    } finally {
+      l.unlock();
+    }
   }
 
   @Override
   public TCPSegment receive() {
-    throw new RuntimeException("//Completar...");
+    l.lock();
+    try {
+      while (queue.empty()) {
+        notEmpty.await();
+      }
+      TCPSegment seg = queue.get();
+      notFull.signal();
+      return seg;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return null;
+    } finally {
+      l.unlock();
+    }
   }
 
   @Override
   public int getMTU() {
-    throw new UnsupportedOperationException("Not supported yet. NO cal completar fins a la pràctica 3...");
+    return Const.MTU_ETHERNET;
   }
 
 }

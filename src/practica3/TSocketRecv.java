@@ -1,4 +1,4 @@
-package practica3;
+    package practica3;
 
 import practica1.CircularQ.CircularQueue;
 import util.Const;
@@ -45,7 +45,13 @@ public class TSocketRecv extends TSocket_base {
   public void processReceivedSegment(TCPSegment rseg) {  
     lock.lock();
     try {
-      throw new RuntimeException("//Completar...");
+     if(!rcvQueue.full()){
+     rcvQueue.put(rseg);
+     printRcvSeg(rseg);
+     appCV.signal();
+     
+     
+     }
     } finally {
       lock.unlock();
     }
