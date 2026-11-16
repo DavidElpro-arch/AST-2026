@@ -25,7 +25,7 @@ public class SimNet_Monitor implements SimNet {
     l.lock();
     try {
       while (queue.full()) {
-        notFull.await();
+        notFull.awaitUninterruptibly();
       }
       queue.put(seg);
       notEmpty.signal();

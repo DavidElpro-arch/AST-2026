@@ -43,7 +43,9 @@ public class TSocket extends TSocket_base {
 
   protected TCPSegment segmentize(byte[] data, int offset, int length) {
     TCPSegment temp = new TCPSegment();
-    temp.setData(data,offset,length);
+    temp.setSourcePort(localPort);      
+    temp.setDestinationPort(remotePort); 
+    temp.setData(data, offset, length);
     temp.setPsh(true);
     return temp;
   }
@@ -85,7 +87,11 @@ public class TSocket extends TSocket_base {
   }
 
   protected void sendAck() {
-    throw new RuntimeException("//Completar...");
+   TCPSegment ackSeg = new TCPSegment();
+    ackSeg.setSourcePort(localPort);
+    ackSeg.setDestinationPort(remotePort);
+    ackSeg.setAck(true);
+    network.send(ackSeg);
   }
 
   @Override
@@ -95,9 +101,17 @@ public class TSocket extends TSocket_base {
     try {     
       if (rseg.isAck()){
         //nothing to be done in this exercise.
+      }else {
+        
+        if (!rcvQueue.full()) {
+            rcvQueue.put(rseg);
+            printRcvSeg(rseg); 
+            appCV.signal();
+            sendAck(); 
+        }
       }
-      throw new RuntimeException("//Completar...");
-    } finally {
+    }
+      finally {
       lock.unlock();
     }
   }

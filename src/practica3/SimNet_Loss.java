@@ -19,11 +19,19 @@ public class SimNet_Loss extends practica2.Protocol.SimNet_Monitor {
 
   @Override
   public void send(TCPSegment seg) {
-    throw new RuntimeException("//Completar...");
+    double randomValue = rand.nextDouble();
+    
+    if (randomValue < lossRate) {
+        
+         log.printRED("+++++++++ SEGMENT LOST: " + seg + " +++++++++");
+    } else {
+       
+        super.send(seg);
+    }
   }
 
   @Override
   public int getMTU() {
-    throw new RuntimeException("//Completar...");
+    return Const.MTU_ETHERNET;
   }
 }

@@ -41,14 +41,44 @@ public class TSocket extends TSocket_base {
     public void sendData(byte[] data, int offset, int length) {
         lock.lock();
         try {
-            throw new RuntimeException("//Completar...");
+             int restant = length;
+    int offrest = offset;
+    
+    while(restant > 0){
+        
+        
+        int longitud = Math.min(MSS, restant);
+        TCPSegment seg = segmentize(data, offrest, longitud);
+        
+        printSndSeg(seg);
+        network.send(seg);
+        
+        while(snd_rcvNxt <= snd_sndNxt){
+        appCV.awaitUninterruptibly();
+        
+        }
+        
+        snd_sndNxt ++;
+        
+        
+        restant = restant - longitud;
+        offrest = offrest + longitud;
+        
+    
+    }
         } finally {
             lock.unlock();
         }
     }
 
     protected TCPSegment segmentize(byte[] data, int offset, int length) {
-        throw new RuntimeException("//Completar...");
+    TCPSegment temp = new TCPSegment();
+    temp.setSourcePort(localPort);      
+    temp.setDestinationPort(remotePort); 
+    temp.setData(data, offset, length);
+    temp.setPsh(true);
+    temp.setSeqNum(snd_sndNxt);
+    return temp;
     }
 
     @Override
@@ -65,11 +95,25 @@ public class TSocket extends TSocket_base {
     @Override
     public int receiveData(byte[] buf, int offset, int maxlen) {
         lock.lock();
-        try {
-            throw new RuntimeException("//Completar...");
-        } finally {
-            lock.unlock();
+    try {
+        while (rcv_Queue.empty()) {
+            appCV.awaitUninterruptibly();
         }
+        
+        int totalBytesRead = 0;
+        
+        while (totalBytesRead < maxlen && !rcv_Queue.empty()) {
+            int currentOffset = offset + totalBytesRead;
+            int remainingLength = maxlen - totalBytesRead;
+            
+            int bytesReadInThisIteration = consumeSegment(buf, currentOffset, remainingLength);
+            totalBytesRead += bytesReadInThisIteration;
+        }
+        
+        return totalBytesRead;
+    } finally {
+        lock.unlock();
+    }
     }
 
     protected int consumeSegment(byte[] buf, int offset, int length) {
@@ -85,17 +129,36 @@ public class TSocket extends TSocket_base {
     }
 
     protected void sendAck() {
-        throw new RuntimeException("//Completar...");
+        TCPSegment ackSeg = new TCPSegment();
+    ackSeg.setSourcePort(localPort);
+    ackSeg.setDestinationPort(remotePort);
+    ackSeg.setAck(true);
+    rcv_rcvNxt++;
+    ackSeg.setAckNum(rcv_rcvNxt);
+    network.send(ackSeg);
     }
 
     // -------------  SEGMENT ARRIVAL  -------------
     @Override
     public void processReceivedSegment(TCPSegment rseg) {
-        lock.lock();
-        try {
-            throw new RuntimeException("//Completar...");
-        } finally {
-            lock.unlock();
+                  printRcvSeg(rseg); 
+ 
+    lock.lock();
+    try {     
+      if (rseg.isAck()){
+        snd_rcvNxt = rseg.getAckNum();
+        appCV.signal();
+      }else {
+        
+        if (!rcv_Queue.full()) {
+            rcv_Queue.put(rseg);
+            appCV.signal();
+            sendAck(); 
         }
+      }
+    }
+      finally {
+      lock.unlock();
+    }
     }
 }
