@@ -26,20 +26,49 @@ public class TSocket extends TSocket_base {
 
   @Override
   public void sendData(byte[] data, int offset, int length) {
-    throw new RuntimeException("//Completar...");
+   int restant = length;
+    int offrest = offset;
+    
+    while(restant > 0){
+        
+        int longitud = Math.min(MSS, restant);
+        TCPSegment seg = segmentize(data, offrest, longitud);
+        network.send(seg);
+        restant = restant - longitud;
+        offrest = offrest + longitud;
+        
+    
+    }
   }
 
   protected TCPSegment segmentize(byte[] data, int offset, int length) {
-    throw new RuntimeException("//Completar...");
+    TCPSegment temp = new TCPSegment();
+    temp.setData(data,offset,length);
+    temp.setPsh(true);
+    return temp;
   }
 
   @Override
   public int receiveData(byte[] buf, int offset, int length) {
-    lock.lock();
+      lock.lock();
     try {
-      throw new RuntimeException("//Completar...");
+        while (rcvQueue.empty()) {
+            appCV.awaitUninterruptibly();
+        }
+        
+        int totalBytesRead = 0;
+        
+        while (totalBytesRead < length && !rcvQueue.empty()) {
+            int currentOffset = offset + totalBytesRead;
+            int remainingLength = length - totalBytesRead;
+            
+            int bytesReadInThisIteration = consumeSegment(buf, currentOffset, remainingLength);
+            totalBytesRead += bytesReadInThisIteration;
+        }
+        
+        return totalBytesRead;
     } finally {
-      lock.unlock();
+        lock.unlock();
     }
   }
 
