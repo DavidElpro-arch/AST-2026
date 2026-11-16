@@ -23,9 +23,23 @@ public class TSocketRecv extends TSocket_base {
   public int receiveData(byte[] buf, int offset, int length) {
     lock.lock();
     try {
-      throw new RuntimeException("//Completar...");
+        while (rcvQueue.empty()) {
+            appCV.awaitUninterruptibly();
+        }
+        
+        int totalBytesRead = 0;
+        
+        while (totalBytesRead < length && !rcvQueue.empty()) {
+            int currentOffset = offset + totalBytesRead;
+            int remainingLength = length - totalBytesRead;
+            
+            int bytesReadInThisIteration = consumeSegment(buf, currentOffset, remainingLength);
+            totalBytesRead += bytesReadInThisIteration;
+        }
+        
+        return totalBytesRead;
     } finally {
-      lock.unlock();
+        lock.unlock();
     }
   }
 
